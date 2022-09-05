@@ -16,34 +16,167 @@ namespace MoviesConsoleApp
             // a camada de persistencia eh errada!
             MovieContext _db = new MovieContext();
 
+            #region # Exercício 01
             Console.WriteLine();
             Console.WriteLine("1. Listar o nome de todos personagens desempenhados por um determinado ator, incluindo a informação de qual o título do filme e o diretor");
+            var questao1 = from c in _db.Characters.Include(per => per.Movie)
+                                                    .ThenInclude(m => m.Genre)
+                                                     .Include("Actor")
+                           where c.Actor.Name == "David Prowse"
+                           select new
+                           {
+                               c.Actor.Name,
+                               c.Character,
+                               c.Movie.Title,
+                               c.Movie.Director
+                           };
+            foreach (var res in questao1)
+            {
+                Console.WriteLine("\t Ator: {0} \t Personagem: {1} \t Título: {2} \t Diretor: {3}", res.Name, res.Character, res.Title, res.Director);
+            }
+            #endregion
 
-
+            #region # Exercício 02
             Console.WriteLine();
             Console.WriteLine("2. Mostrar o nome e idade de todos atores que desempenharam um determinado personagem(por exemplo, quais os atores que já atuaram como '007' ?");
+            var questao2 = (from c in _db.Characters.Include("Actor")
+                            where c.Character == "James Bond"
+                            select new
+                            {
+                                c.Character,
+                                c.Actor.Name,
+                                Age = DateTime.Today.Year - c.Actor.DateBirth.Year
+                            }).Distinct();
+            foreach (var res in questao2)
+            {
+                Console.WriteLine("\t Personagem: {0} \t Ator: {1} \t Idade: {2} anos", res.Character, res.Name, res.Age);
+            }
+            #endregion
 
-
+            #region # Exercício 03
             Console.WriteLine();
             Console.WriteLine("3. Informar qual o ator desempenhou mais vezes um determinado personagem(por exemplo: qual o ator que realizou mais filmes como o 'agente 007'");
+            var NomePersonagem = "Darth Vader";
+            var personagem = (from p in _db.Characters where p.Character == NomePersonagem select new { p.Character }).Distinct();
+            var questao3 = from c in _db.Characters
+                           where c.Character == NomePersonagem
+                           group c by c.Actor.Name into grpChar
+                           orderby grpChar.Count() descending
+                           select new
+                           {
+                               Ator = grpChar.Key,
+                               Quantidade = grpChar.Count()
+                           };
+            Console.WriteLine("\t Personagem: {0}", personagem.First().Character);
+            foreach (var res in questao3)
+            {
+                Console.WriteLine("\t Ator: {0}", res.Ator);
+                Console.WriteLine("\t Participação: {0}", res.Quantidade);
+            }
+            #endregion
 
+            #region # Exercício 04
             Console.WriteLine();
             Console.WriteLine("4. Mostrar o nome e a data de nascimento do ator mais idoso");
+            var questao4 = from c in _db.Actors
+                           orderby DateTime.Today.Year - c.DateBirth.Year descending
+                           select new
+                           {
+                               c.Name,
+                               c.DateBirth,
+                               Age = DateTime.Today.Year - c.DateBirth.Year
+                           };
+            Console.WriteLine("\t Nome do Ator: {0} \t Data de Nascimento: {1} \t Idade: {2} anos", questao4.First().Name, questao4.First().DateBirth, questao4.First().Age);
+            #endregion
 
+            #region # Exercício 05
             Console.WriteLine();
             Console.WriteLine("5. Mostrar o nome e a data de nascimento do ator mais novo a atuar em um determinado gênero");
+            var NomeGenero = "Romance";
+            var genero = (from g in _db.Genres where g.Name == NomeGenero select new { g.Name }).Distinct();
+            var questao5 = from c in _db.Characters.Include(per => per.Movie)
+                                                    .ThenInclude(m => m.Genre)
+                                                     .Include(a => a.Actor)
+                           where c.Actor.DateBirth == _db.Actors.Max(d => d.DateBirth)
+                           //where c.Movie.Genre.Name == NomeGenero
+                           select new
+                           {
+                               c.Actor.Name,
+                               c.Actor.DateBirth,
+                               Age = DateTime.Today.Year - c.Actor.DateBirth.Year,
+                               Genero = c.Movie.Genre.Name
+                           };
+            Console.WriteLine("\t Genero: {0}", genero.First().Name);
+            foreach (var res in questao5)
+            {
+                Console.WriteLine("\t Nome do Ator: {0} \t Data de Nascimento: {1} \t Idade: {2} anos \t Genero: {3}", res.Name, res.DateBirth, res.Age, res.Genero);
+            }
+            #endregion
 
+            #region # Exercício 06
             Console.WriteLine();
             Console.WriteLine("6. Mostrar o valor médio das avaliações dos filmes de um determinado diretor");
+            var director = "Martin Campbell";
+            var DirectorName = (from m in _db.Movies where m.Director == director select new { m.Director }).Distinct();
+            var questao6 = from f in _db.Movies
+                     where f.Director == director
+                     group f by f.Title into grpMov
+                     select new
+                     {
+                         Filme = grpMov.Key,
+                         Avaliacao = grpMov.Average(e => e.Rating)
+                     };
+            Console.WriteLine("\t Diretor: {0}", DirectorName.First().Director);
+            foreach (var res in questao6)
+            {
+                Console.WriteLine("\t Filme: {0}", res.Filme);
+                Console.WriteLine("\t Avaliação média: {0}", res.Avaliacao);
+            }
 
+            #endregion
+
+            #region # Exercício 07
             Console.WriteLine();
             Console.WriteLine("7. Qual o elenco do filme melhor avaliado ?");
+            var MaxRating = _db.Movies.Max(r => r.Rating);
+            var MovieMaxRating = (from m in _db.Movies where m.Rating == MaxRating select new { m.Title }).Distinct();
+            var questao7 = from m in _db.Characters.Include(m => m.Movie)
+                                                    .Include(a => a.Actor)
+                      where m.Movie.Rating == MaxRating
+                      select new
+                      {
+                          m.Actor.Name
+                      };
+            Console.WriteLine("\t Filme: {0}", MovieMaxRating.First().Title);
+            foreach (var res in questao7)
+            {
+                Console.WriteLine("\t Nome do Ator/Atriz: {0} ", res.Name);
+            }
+            #endregion
 
+            #region # Exercício 08
             Console.WriteLine();
             Console.WriteLine("8. Qual o elenco do filme com o maior faturamento?");
+            var MaxGross = _db.Movies.Max(g => g.Gross);
+            var MovieMaxGross = (from m in _db.Movies where m.Gross == MaxGross select new { m.Title }).Distinct();
+            var questao8 = from m in _db.Characters.Include(m => m.Movie)
+                                                    .Include(a => a.Actor)
+                           where m.Movie.Gross == MaxGross
+                           select new
+                           {
+                               m.Actor.Name
+                           };
+            Console.WriteLine("\t Filme: {0}", MovieMaxGross.First().Title);
+            foreach (var res in questao8)
+            {
+                Console.WriteLine("\t Nome do Ator/Atriz: {0} ", res.Name);
+            }
+            #endregion
 
+            #region # Exercício 09
             Console.WriteLine();
             Console.WriteLine("9. Gerar um relatório de aniversariantes, agrupando os atores pelo mês de aniverário.");
+            #endregion
 
             Console.WriteLine("- - -   feito!  - - - ");
             Console.WriteLine();
