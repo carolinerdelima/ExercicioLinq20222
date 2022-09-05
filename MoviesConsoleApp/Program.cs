@@ -231,5 +231,61 @@ namespace MoviesConsoleApp
             }
 
         }
-    }
+
+        static void Main_Consultas(string[] args)
+        {
+
+            var personagens = from per in _db.Characters
+                              //funciona como um join de bd
+                              .Include(p => p.Actor)
+                              .Include(p => p.Movie)
+                              .ThenInclude(m => m.Genre)
+
+                              where p.Actor.Name == "Judi Dench"
+                              select new
+                              {
+                                  per.Character,
+                                  per.Movie.Title,
+                                  per.Movie.Genre.Name
+                              };
+
+
+                                         .Include(per => per.Movie)
+                                              .ThenInclude(movie => movie.Genre)
+                                         .Include("Actor")
+                              //     join genero in _db.Genres on p.Movie.GenreID equals genero.GenreId
+                          where p.Actor.Name == "Judi Dench"
+                          select new
+                          {
+                              p.Character,
+                              Genero = p.Movie.Genre.Name,
+                              p.Movie.Title
+                          };
+
+
+            foreach (var res in query14)
+            {
+
+                Console.WriteLine("\t {0} \t {1}", res.Genero, res.Title);
+            }
+
+
+            var query14b = from e in query14
+                           group e by e.Genero into grp
+                           select new
+                           {
+                               Gen = grp.Key,
+                               Quant = grp.Count()
+                           };
+
+
+            Console.WriteLine("\nTotal por genero...");
+            foreach (var res in query14b)
+            {
+
+                Console.WriteLine("\t {0} \t {1}", res.Gen, res.Quant);
+            }
+        }
+
+        }
 }
